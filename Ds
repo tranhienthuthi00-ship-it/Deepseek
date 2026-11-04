@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Planner Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ================= GLOBAL & VARIABLES ================= */
+        :root {
+            --bg-color: #f4f3f1;
+            --sidebar-bg: #fbfaf8;
+            --text-main: #1a1a1a;
+            --text-muted: #666;
+            --purple-main: #727fe3;
+            --purple-dark: #505bbd;
+            --purple-shadow: #b0b7f0;
+            --purple-light: #e3e6fc;
+            --yellow-main: #f6e6bd;
+            --yellow-inner: #fdfbf6;
+            --yellow-note: #f8efcc;
+            --border-color: #1a1a1a;
+            --border-radius-lg: 16px;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --shadow-hard: 4px 4px 0px var(--border-color);
+            --shadow-soft: 0px 4px 12px rgba(0,0,0,0.05);
+            
+            /* Chart Colors */
+            --chart-1: #727fe3; /* Purple */
+            --chart-2: #f6e6bd; /* Yellow */
+            --chart-3: #f0d5e5; /* Pink */
+            --chart-4: #b7e7c5; /* Green */
+            --chart-5: #8c9cf0; /* Blue */
+            --chart-6: #4db6ac; /* Teal - Cho vay */
+            --chart-7: #ff8a65; /* Orange - Đi vay */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* ================= SIDEBAR ================= */
+        .sidebar {
+            width: 240px;
+            background-color: var(--sidebar-bg);
+            border-right: 2px solid #e0dfdc;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 16px;
+            height: 100vh;
+            position: relative;
+            flex-shrink: 0;
+            transition: width 0.3s ease, padding 0.3s ease;
+        }
+
+        /* CSS CHO TRẠNG THÁI THU GỌN */
+        .sidebar.collapsed {
+            width: 80px;
+            padding: 24px 8px;
+        }
+
+        .sidebar.collapsed .logo-box,
+        .sidebar.collapsed .star-icon,
+        .sidebar.collapsed .nav-item span,
+        .sidebar.collapsed .nav-divider,
+        .sidebar.collapsed .user-info {
+            display: none;
+        }
+
+        .sidebar.collapsed .nav-item {
+            text-align: center;
+            padding: 10px 0;
+            font-size: 0; /* Ẩn text */
+        }
+        .sidebar.collapsed .nav-item::after {
+            content: '...'; /* Hiển thị dấu 3 chấm thay thế */
+            font-size: 16px;
+        }
+
+        .sidebar.collapsed .user-profile {
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .sidebar.collapsed .collapse-btn {
+            top: 50px; /* Đưa nút lên cao hơn khi logo bị ẩn */
+        }
+
+        .sidebar.collapsed .collapse-btn svg {
+            transform: rotate(180deg);
+        }
+
+        .logo-area {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px; /* Giảm margin để không đè lên menu */
+            margin-top: 10px;
+            flex-shrink: 0;
+            z-index: 10;
+            min-height: 40px;
+        }
+
+        .logo-box {
+            border: 2px dashed #1a1a1a;
+            border-radius: 20px;
+            padding: 6px 16px;
+            background-color: #f0cfdf;
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 1px;
+            transform: rotate(-2deg);
+            position: relative;
+            z-index: 2;
+        }
+
+        .star-icon {
+            position: absolute;
+            z-index: 1;
+        }
+        .star-left { left: 0; top: 0; transform: translateY(-50%) rotate(-15deg); }
+        .star-right { right: 0; bottom: 0; transform: translateY(50%) rotate(15deg); }
+
+        .collapse-btn {
+            position: absolute;
+            right: -12px;
+            top: 80px; /* Đặt vị trí an toàn không đè logo */
+            background: var(--sidebar-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 20;
+            transition: top 0.3s ease;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+            overflow-y: auto; 
+            overflow-x: hidden;
+            padding-right: 5px;
+        }
+
+        .nav-menu::-webkit-scrollbar { width: 4px; }
+        .nav-menu::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+        .nav-menu::-webkit-scrollbar-thumb:hover { background: #aaa; }
+
+        .nav-item {
+            padding: 10px 16px;
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            color: #4a4a4a;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .nav-item:hover {
+            background-color: #eaeaea;
+        }
+
+        .nav-item.active {
+            background-color: var(--purple-main);
+            color: white;
+            border: 2px solid var(--border-color);
+            box-shadow: 2px 2px 0px var(--border-color);
+        }
+
+        .nav-divider {
+            height: 1px;
+            background-color: #ccc;
+            margin: 16px 0;
+            flex-shrink: 0;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            background-color: white;
+            flex-shrink: 0; 
+            margin-top: auto; /* Đẩy xuống đáy */
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            overflow: hidden;
+            border: 1.5px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .user-info p {
+            margin: 0;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
+        .user-name { font-weight: 700; font-size: 13px; }
+        .user-level { font-size: 11px; color: #666; }
+
+        /* ================= MAIN CONTENT ================= */
+        .main-content {
+            flex-grow: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+            height: 100vh;
+            position: relative;
+        }
+
+        .view-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* ================= HOME VIEW ================= */
+        .top-row, .bottom-row {
+            display: flex;
+            gap: 24px;
+            flex: 1;
+        }
+
+        /* --- Calendar Panel --- */
+        .calendar-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .calendar-panel {
+            background-color: var(--purple-main);
+            border-radius: var(--border-radius-lg);
+            padding: 24px;
+            border: 2px solid var(--border-color);
+            box-shadow: 6px 6px 0px var(--purple-shadow);
+            display: flex;
+            flex-direction: column;
+            color: white;
+            position: relative;
+            flex-grow: 1;
+        }
+
+        /* ĐƯA NAV VÀO TRONG PANEL */
+        .calendar-top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-title-label {
+            font-size: 18px;
+            font-weight: 700;
+            color: white; /* Đổi màu trắng */
+        }
+
+        .month-navigator {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: white;
+            border: 1.5px solid var(--border-color);
+            border-radius: 20px;
+            padding: 4px 12px;
+            box-shadow: 2px 2px 0px #2b2b4b;
+        }
+
+        .nav-arrow {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .nav-arrow:hover { background: #eee; }
+
+        .current-month-text {
+            font-weight: 700;
+            font-size: 14px;
+            min-width: 110px;
+            text-align: center;
+            color: var(--text-main); /* Màu đen để nổi bật trên nền trắng */
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px 4px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .day-name { font-size: 14px; margin-bottom: 8px; }
+
+        .day-number {
+            font-size: 16px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .day-number:hover:not(.empty) { background-color: rgba(255, 255, 255, 0.2); }
+
+        .day-number.active {
+            background-color: #2b2b4b;
+            width: 32px;
+            margin: 0 auto;
+        }
+        .day-number.empty { cursor: default; }
+
+        .calendar-bottom { display: flex; gap: 16px; margin-top: auto; }
+        .avatar-illustration { width: 120px; flex-shrink: 0; position: relative; }
+        
+        .event-list {
+            flex-grow: 1;
+            max-height: 150px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .event-title {
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #f8e59a;
+        }
+
+        .event-item { font-size: 13px; margin-bottom: 8px; line-height: 1.4; }
+        .event-date { font-weight: 700; display: block; margin-bottom: 2px; }
+        .event-desc { font-weight: 500; opacity: 0.9; }
+
+        /* --- Bucket List Panel --- */
+        .bucket-list-panel {
+            background-color: white;
+            border-radius: var(--border-radius-lg);
+            border: 2px solid var(--border-color);
+            box-shadow: var(--shadow-hard);
+            padding: 24px;
+            flex: 1.5;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .bucket-list-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px 20px;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .checkbox-item input[type="checkbox"] { display: none; }
+
+        .custom-checkbox {
+            width: 18px;
+            height: 18px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1px;
+            transition: all 0.2s;
+        }
+
+        .checkbox-item input:checked + .custom-checkbox {
+            background-color: var(--purple-main);
+            border-color: var(--purple-main);
+        }
+
+        .checkbox-item input:checked + .custom-checkbox::after {
+            content: '';
+            width: 5px;
+            height: 9px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+            margin-bottom: 2px;
+        }
+
+        .checkbox-item input:checked ~ .text-content { text-decoration: line-through; color: #999; }
+        .text-content { display: inline-block; min-width: 50px; outline: none; word-break: break-word; }
+        .text-content.editing { border-bottom: 1px dashed var(--purple-main); }
+
+        .add-goal-container {
+            display: flex;
+            margin-top: 20px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 20px;
+            padding: 4px;
+            background: white;
+        }
+
+        .add-goal-container input {
+            flex-grow: 1;
+            border: none;
+            outline: none;
+            padding: 8px 16px;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .btn-add {
+            background-color: var(--purple-main);
+            color: white;
+            border: 1.5px solid var(--border-color);
+            border-radius: 16px;
+            padding: 6px 24px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Quicksand', sans-serif;
+            transition: transform 0.1s;
+        }
+        .btn-add:active { transform: scale(0.95); }
+
+        /* --- Event Note Panel --- */
+        .event-note-panel {
+            background-color: white;
+            border-radius: var(--border-radius-lg);
+            border: 2px solid var(--border-color);
+            box-shadow: 6px 6px 0px var(--purple-shadow);
+            padding: 24px;
+            flex: 1.5;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .panel-header h2 { font-size: 20px; font-weight: 700; }
+        .header-actions { display: flex; gap: 8px; }
+
+        .icon-btn {
+            width: 28px;
+            height: 28px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 6px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .icon-btn:hover { background: #f0f0f0; }
+
+        .tabs { display: flex; gap: 12px; margin-bottom: 12px; font-size: 13px; }
+
+        .tab {
+            padding: 4px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            color: #666;
+            transition: all 0.2s;
+        }
+        .tab.active { background-color: #f0d5e5; border-color: var(--border-color); color: var(--text-main); font-weight: 700; }
+
+        .date-input-row { font-size: 12px; color: #666; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .date-input-row input { border: 1px solid #ccc; border-radius: 4px; padding: 4px 8px; font-family: 'Quicksand', sans-serif; font-size: 12px; outline: none; }
+        .date-input-row input:focus { border-color: var(--purple-main); }
+
+        .note-content { display: flex; gap: 20px; flex-grow: 1; min-height: 200px; }
+
+        .note-left {
+            flex: 1;
+            background-color: var(--yellow-note);
+            border-radius: var(--border-radius-md);
+            border: 1.5px solid #d4c8a3;
+            padding: 16px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .note-title-input { font-weight: 700; font-size: 14px; background: transparent; border: none; outline: none; margin-bottom: 8px; }
+        .note-textarea { flex-grow: 1; background: transparent; border: none; outline: none; resize: none; font-family: 'Quicksand', sans-serif; font-size: 13px; color: #555; }
+
+        .btn-save-note {
+            align-self: flex-end;
+            border: 1.5px solid var(--border-color);
+            background: transparent;
+            border-radius: 12px;
+            padding: 4px 16px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-save-note:hover { background: #fff; }
+        .btn-save-note:active { transform: scale(0.95); }
+
+        .note-right { flex: 1; border: 1.5px solid #ddd; border-radius: var(--border-radius-md); padding: 16px; position: relative; display: flex; flex-direction: column; }
+
+        .timeline-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+        .timeline-tab { padding: 4px 16px; border-radius: 12px; font-size: 11px; font-weight: 600; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s; }
+        .timeline-tab.active { background-color: #f0d5e5; }
+        .timeline-tab.inactive { background-color: white; color: #888; }
+
+        .timeline-container { flex-grow: 1; overflow-y: auto; max-height: 180px; padding-right: 5px; }
+
+        .timeline { position: relative; padding-left: 60px; }
+        .timeline::before { content: ''; position: absolute; left: 54px; top: 0; bottom: 0; width: 1px; background-color: #ccc; }
+
+        .timeline-item { position: relative; margin-bottom: 16px; font-size: 12px; }
+        .timeline-item::before { content: ''; position: absolute; left: -10px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background-color: white; border: 1.5px solid #888; }
+
+        .timeline-date { position: absolute; left: -60px; top: 0; font-size: 10px; border: 1px solid #ddd; border-radius: 10px; padding: 2px 6px; background: white; color: #555; text-align: center; }
+        .timeline-text { color: #555; word-break: break-word; }
+        .note-footer-hint { font-size: 10px; color: #888; margin-top: 10px; }
+
+        /* --- Cash Panel --- */
+        .cash-table-panel {
+            background-color: var(--yellow-main);
+            border-radius: var(--border-radius-lg);
+            border: 2px solid var(--border-color);
+            padding: 24px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cash-inner {
+            background-color: var(--yellow-inner);
+            border-radius: var(--border-radius-md);
+            border: 1.5px solid var(--border-color);
+            padding: 24px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .cash-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 12px; font-weight: 600; color: #444; }
+        .cash-row .val { width: 30%; text-align: right; }
+        .cash-row .qty { width: 20%; text-align: center; display: flex; justify-content: center; }
+        .cash-row .total { width: 30%; text-align: right; }
+        .cash-row .eq { width: 10%; text-align: center; }
+
+        .qty-input {
+            width: 45px;
+            border: 1px solid transparent;
+            background: transparent;
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 600;
+            font-size: 12px;
+            color: #444;
+            text-align: center;
+            outline: none;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .qty-input:hover, .qty-input:focus { border-color: #ccc; background-color: white; }
+        .qty-input::-webkit-outer-spin-button, .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .cash-total-row {
+            display: flex;
+            justify-content: flex-end;
+            padding-top: 16px;
+            margin-top: 8px;
+            border-top: 3px solid var(--border-color);
+            font-weight: 700;
+            font-size: 14px;
+            color: #1a1a1a;
+        }
+
+        /* ================= ASSET MANAGEMENT VIEW ================= */
+        /* Đảm bảo chiều cao 100% cho các cột */
+        .asset-dashboard {
+            display: flex;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .asset-left-col { 
+            flex: 1.2; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            height: 100%; 
+        }
+        
+        .asset-right-col { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px;
+            height: 100%;
+        }
+
+        .asset-panel {
+            background-color: white;
+            border-radius: var(--border-radius-lg);
+            border: 2px solid var(--border-color);
+            box-shadow: var(--shadow-hard);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .asset-panel.blue-bg {
+            background-color: var(--purple-light);
+            box-shadow: 6px 6px 0px var(--purple-shadow);
+            flex-shrink: 0;
+        }
+
+        /* KÉO DÃN DANH SÁCH TÀI SẢN */
+        .asset-panel.list-panel {
+            flex-grow: 1;
+            overflow: hidden; /* Quan trọng để scroll bên trong hoạt động */
+        }
+
+        .asset-form { display: flex; flex-direction: column; gap: 12px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { font-weight: 700; font-size: 13px; }
+
+        .form-control {
+            padding: 8px 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            font-family: 'Quicksand', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            outline: none;
+            background: white;
+            transition: box-shadow 0.2s;
+        }
+        .form-control:focus { box-shadow: 2px 2px 0px var(--purple-main); }
+
+        .btn-submit-asset {
+            background-color: var(--purple-main);
+            color: white;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            padding: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px var(--border-color);
+            transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;
+            margin-top: 4px;
+        }
+        .btn-submit-asset:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--border-color); }
+
+        .btn-cancel {
+            background-color: #fff;
+            color: var(--text-main);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            padding: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            margin-top: 4px;
+        }
+        .btn-cancel:active { transform: scale(0.98); }
+
+        /* Phần Danh sách 3 mục */
+        .asset-list-panel {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .list-section {
+            margin-bottom: 20px;
+        }
+        .list-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .list-section-title {
+            font-size: 14px;
+            font-weight: 700;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            border-bottom: 2px dashed #ccc;
+            color: var(--purple-dark);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .asset-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 8px;
+            border-bottom: 1px dashed #eee;
+            border-radius: var(--border-radius-sm);
+            transition: background 0.2s;
+        }
+        .asset-list-item:hover { background-color: #f9f9f9; }
+        .asset-list-item:last-child { border-bottom: none; }
+
+        .asset-info { display: flex; flex-direction: column; gap: 4px; }
+        .asset-name { font-weight: 700; font-size: 13px; }
+        .asset-type-badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background-color: #eee;
+            display: inline-block;
+            width: fit-content;
+        }
+
+        .asset-actions { display: flex; align-items: center; gap: 8px; }
+        .asset-value { font-weight: 700; font-size: 13px; color: var(--purple-dark); }
+
+        /* Chart Styles */
+        .chart-panel {
+            flex-shrink: 0;
+        }
+        .chart-container { display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; margin-top: 10px; }
+        .donut-chart { width: 180px; height: 180px; transform: rotate(-90deg); }
+        .donut-chart circle { fill: transparent; stroke-width: 40; transition: stroke-dasharray 0.5s ease; }
+
+        .chart-center-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
+        .chart-center-text p { margin: 0; font-size: 11px; color: #666; }
+        .chart-center-text h3 { margin: 2px 0 0 0; font-size: 16px; color: var(--text-main); }
+
+        .chart-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 15px; }
+        .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; }
+        .legend-color { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--border-color); }
+
+        /* Credit Spending Styles */
+        .credit-panel {
+            background-color: #fce8e6; 
+            border-radius: var(--border-radius-lg);
+            border: 2px solid var(--border-color);
+            box-shadow: 4px 4px 0px #e0b4b4;
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* Cần thiết cho scroll */
+        }
+
+        .credit-content {
+            display: flex;
+            gap: 15px;
+            margin-top: 12px;
+            flex-grow: 1;
+            min-height: 0;
+        }
+
+        .credit-form-col {
+            flex: 1;
+            border-right: 2px dashed #ccc;
+            padding-right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+        }
+
+        .credit-list-col {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .credit-list-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .credit-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px dashed #ddd;
+            font-size: 12px;
+        }
+        .credit-list-item:last-child { border-bottom: none; }
+
+        .credit-date-tag {
+            font-size: 10px;
+            font-weight: 700;
+            background: white;
+            border: 1px solid var(--border-color);
+            padding: 2px 4px;
+            border-radius: 6px;
+            margin-right: 8px;
+        }
+
+        .credit-desc-text { flex-grow: 1; font-weight: 600; }
+        .credit-amount-text { font-weight: 700; color: #d9534f; margin-right: 8px; }
+
+        /* SVG Drawings */
+        .svg-icon { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .top-row, .bottom-row { flex-direction: column; }
+            .calendar-wrapper, .bucket-list-panel, .event-note-panel, .cash-table-panel { flex: auto; }
+            .bucket-list-grid { grid-template-columns: repeat(2, 1fr); }
+            .asset-dashboard { flex-direction: column; height: auto; }
+            .asset-left-col, .asset-right-col { height: auto; }
+            .credit-content { flex-direction: column; }
+            .credit-form-col { border-right: none; border-bottom: 2px dashed #ccc; padding-right: 0; padding-bottom: 15px; }
+        }
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow-y: auto; height: auto; }
+            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 2px solid #e0dfdc; flex-direction: row; align-items: center; justify-content: space-between; padding: 10px 20px; }
+            .logo-area { margin: 0; }
+            .nav-menu { display: none; }
+            .collapse-btn { display: none; } /* Ẩn nút thu gọn trên mobile */
+            .main-content { height: auto; overflow: visible; padding: 16px; }
+            .bucket-list-grid { grid-template-columns: 1fr; }
+            .note-content { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="collapse-btn" id="collapseBtn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </div>
+        
+        <div class="logo-area">
+            <svg class="star-icon star-left" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#b7e7c5" stroke="#1a1a1a" stroke-width="1.5"/></svg>
+            <div class="logo-box">TRAN HIEN</div>
+            <svg class="star-icon star-right" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="#f8e59a" stroke="#1a1a1a" stroke-width="1.5"/></svg>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-item active" id="nav-home" onclick="switchView('home')"><span>Trang chủ</span></div>
+            <div class="nav-item"><span>Bộ sưu tập</span></div>
+            <div class="nav-item"><span>Dự án</span></div>
+            <div class="nav-item"><span>Lộ trình & Kiến thức</span></div>
+            <div class="nav-item"><span>English</span></div>
+            <div class="nav-item"><span>Calendar</span></div>
+            <div class="nav-item" id="nav-assets" onclick="switchView('assets')"><span>Quản lý tài sản</span></div>
+            <div class="nav-item"><span>Coming soon</span></div>
+            
+            <div class="nav-divider"></div>
+            
+            <div class="nav-item" style="font-weight: 700;"><span>Tiến độ & Bạn bè</span></div>
+            <div class="nav-item" style="font-weight: 700;"><span>Yêu cầu tính năng</span></div>
+            <div class="nav-item" style="font-weight: 700;"><span>Ghi chú</span></div>
+        </nav>
+
+        <div class="user-profile">
+            <div class="user-avatar">
+                <svg viewBox="0 0 100 100" width="100%" height="100%">
+                    <circle cx="50" cy="50" r="50" fill="#fce8e6"/>
+                    <path d="M30 60 Q50 80 70 60" fill="none" stroke="#333" stroke-width="4"/>
+                    <circle cx="40" cy="45" r="5" fill="#333"/>
+                    <circle cx="60" cy="45" r="5" fill="#333"/>
+                    <path d="M25 35 Q50 10 75 35 Q85 50 75 60 Q50 70 25 60 Q15 50 25 35" fill="#333"/>
+                </svg>
+            </div>
+            <div class="user-info">
+                <p class="user-name">Hien Tran</p>
+                <p class="user-level">Trình độ 81</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        
+        <!-- ================= HOME VIEW ================= -->
+        <div id="homeView" class="view-container">
+            <!-- TOP ROW -->
+            <div class="top-row">
+                
+                <!-- CALENDAR SECTION -->
+                <div class="calendar-wrapper">
+                    <!-- Đã di chuyển toàn bộ thanh nav vào trong calendar-panel -->
+                    <div class="calendar-panel">
+                        <div class="calendar-top-nav">
+                            <div class="calendar-title-label">Calendar</div>
+                            <div class="month-navigator">
+                                <button class="nav-arrow" id="prevMonth">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                                </button>
+                                <div class="current-month-text" id="currentMonthYear">November 2026</div>
+                                <button class="nav-arrow" id="nextMonth">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="calendar-grid" id="calendarGrid">
+                            <!-- Grid generated by JS -->
+                        </div>
+
+                        <div class="calendar-bottom">
+                            <div class="avatar-illustration">
+                                <svg viewBox="0 0 200 200" width="100%" style="position: absolute; bottom: -10px; left: 0;">
+                                    <circle cx="100" cy="100" r="90" fill="#8c9cf0" opacity="0.6"/>
+                                    <path d="M 40 80 C 20 80, 20 130, 40 140 C 30 160, 60 180, 70 160 C 80 170, 110 180, 120 160 C 140 180, 170 160, 160 140 C 180 130, 180 80, 160 80 C 170 50, 130 30, 100 30 C 70 30, 30 50, 40 80 Z" fill="#1a1a1a"/>
+                                    <ellipse cx="100" cy="110" rx="45" ry="50" fill="#f5d0b5"/>
+                                    <path d="M 80 130 Q 100 120 120 130 Q 110 140 100 135 Q 90 140 80 130 Z" fill="#1a1a1a"/>
+                                    <path d="M 95 140 Q 100 150 105 140 Z" fill="#ff6b6b"/>
+                                    <rect x="60" y="85" width="30" height="25" rx="5" fill="none" stroke="#1a1a1a" stroke-width="4"/>
+                                    <rect x="110" y="85" width="30" height="25" rx="5" fill="none" stroke="#1a1a1a" stroke-width="4"/>
+                                    <path d="M 90 95 L 110 95" stroke="#1a1a1a" stroke-width="4"/>
+                                    <circle cx="75" cy="95" r="3" fill="#1a1a1a"/>
+                                    <circle cx="125" cy="95" r="3" fill="#1a1a1a"/>
+                                </svg>
+                            </div>
+                            
+                            <div class="event-list" id="calendarEventList">
+                                <!-- Nội dung sự kiện tháng sẽ được render tự động bằng JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BUCKET LIST PANEL -->
+                <div class="bucket-list-panel">
+                    <h2 class="panel-title">2026 Bucket list</h2>
+                    <div style="font-size: 11px; color: #888; text-align: right; margin-top: -15px; margin-bottom: 10px; font-style: italic;">
+                        (Nhấn đúp để chỉnh sửa, xóa hết ký tự để xóa)
+                    </div>
+                    
+                    <div class="bucket-list-grid" id="bucketListGrid">
+                        <!-- Col 1 -->
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Mua ipad M3</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Đi du lịch Hà Nội</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Tiết kiệm được nhiều tiền</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Niềng răng</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Học bằng lái xe</span></label>
+                        <label class="checkbox-item"><input type="checkbox" checked><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Đi Lý Sơn</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">New balance 533</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Tập thể dục thường xuyên</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Đưa cả nhà đi chơi</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Về thăm nhà nhiều</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Cười nhiều hơn</span></label>
+
+                        <!-- Col 2 -->
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Nhận đúp để chính sửa</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Xoá hết ký tự để xoá</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Tick vào ô để đánh dấu</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Niềng răng</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Học bằng lái xe</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Đi Lý Sơn</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">New balance 533</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Tập thể dục thường xuyên</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Đưa cả nhà đi chơi</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Về thăm nhà nhiều</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Cười nhiều hơn</span></label>
+
+                        <!-- Col 3 -->
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Mua ipad M3</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Đi du lịch Hà Nội</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Tiết kiệm được nhiều tiền</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Niềng răng</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Học bằng lái xe</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Đi Lý Sơn</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">New balance 533</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Tập thể dục thường xuyên</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Đưa cả nhà đi chơi</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Về thăm nhà nhiều</span></label>
+                        <label class="checkbox-item"><input type="checkbox"><span class="custom-checkbox"></span><span class="text-content" contenteditable="true">Cười nhiều hơn</span></label>
+                    </div>
+
+                    <div class="add-goal-container">
+                        <input type="text" id="newGoalInput" placeholder="Thêm mục tiêu...">
+                        <button class="btn-add" id="btnAddGoal">Thêm</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM ROW -->
+            <div class="bottom-row">
+                
+                <!-- EVENT NOTE PANEL -->
+                <div class="event-note-panel">
+                    <div class="panel-header">
+                        <h2>Thêm sự kiện & ghi chú</h2>
+                        <div class="header-actions">
+                            <button class="icon-btn" title="Copy">
+                                <svg class="svg-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                            <button class="icon-btn" title="Close">
+                                <svg class="svg-icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="tabs" id="inputTabs">
+                        <div class="tab active" data-type="event">Sự kiện</div>
+                        <div class="tab" data-type="note">Ghi chú</div>
+                        <span style="font-size: 11px; margin-left: auto; color: #888; align-self: center;">(chọn 1 trong 2)</span>
+                    </div>
+
+                    <div class="date-input-row">
+                        <span>Ngày:</span>
+                        <input type="date" id="eventDateInput">
+                    </div>
+
+                    <div class="note-content">
+                        <div class="note-left">
+                            <input type="text" class="note-title-input" placeholder="Nội dung tiêu đề" id="noteTitle">
+                            <textarea class="note-textarea" placeholder="Nhập nội dung sự kiện/ghi chú&#10;#hashtag (nếu có)" id="noteContent"></textarea>
+                            <button class="btn-save-note" id="btnSaveNote">Lưu</button>
+                        </div>
+
+                        <div class="note-right">
+                            <div class="timeline-tabs" id="timelineTabs">
+                                <div class="timeline-tab active" data-filter="event">Sự kiện</div>
+                                <div class="timeline-tab inactive" data-filter="note">Ghi chú</div>
+                            </div>
+                            
+                            <div class="timeline-container">
+                                <div class="timeline" id="timelineRenderArea">
+                                    <!-- Dữ liệu timeline sẽ được render bằng JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="note-footer-hint">Ghi chú: Nhấn vào "Sự kiện" hoặc "Ghi chú" để chuyển đổi giữa cả hai.</div>
+                </div>
+
+                <!-- CASH TABLE PANEL -->
+                <div class="cash-table-panel">
+                    <h2 class="panel-title" style="margin-bottom: 10px;">Bảng kê tiền mặt</h2>
+                    <div class="cash-inner">
+                        <div class="cash-row" data-value="500000">
+                            <div class="val">500.000</div><div class="eq">*</div>
+                            <div class="qty"><input type="number" class="qty-input" value="3" min="0"></div>
+                            <div class="eq">=</div><div class="total row-total">1.500.000</div>
+                        </div>
+                        <div class="cash-row" data-value="200000">
+                            <div class="val">200.000</div><div class="eq">*</div>
+                            <div class="qty"><input type="number" class="qty-input" value="4" min="0"></div>
+                            <div class="eq">=</div><div class="total row-total">800.000</div>
+                        </div>
+                        <div class="cash-row" data-value="100000">
+                            <div class="val">100.000</div><div class="eq">*</div>
+                            <div class="qty"><input type="number" class="qty-input" value="2" min="0"></div>
+                            <div class="eq">=</div><div class="total row-total">200.000</div>
+                        </div>
+                        <div class="cash-row" data-value="50000">
+                            <div class="val">50.000</div><div class="eq">*</div>
+                            <div class="qty"><input type="number" class="qty-input" value="7" min="0"></div>
+                            <div class="eq">=</div><div class="total row-total">350.000</div>
+                        </div>
+                        <div class="cash-row" data-value="20000">
+                            <div class="val">20.000</div><div class="eq">*</div>
+                            <div class="qty"><input type="number" class="qty-input" value="5" min="0"></div>
+                            <div class="eq">=</div><div class="total row-total">100.000</div>
+                        </div>
+                        <div class="cash-row" data-value="10000">
+                            <div class="val">10.000</div><div class="eq">*</div>
+                            <div class="qty"><input type="number" class="qty-input" value="2" min="0"></div>
+                            <div class="eq">=</div><div class="total row-total">20.000</div>
+                        </div>
+                        <div class="cash-row" data-value="5000">
+                            <div class="val">5.000</div><div class="eq">*</div>
+                            <div class="qty"><input type="number" class="qty-input" value="1" min="0"></div>
+                            <div class="eq">=</div><div class="total row-total">5.000</div>
+                        </div>
+                        <div class="cash-row" data-value="2000">
+                            <div class="val">2.000</div><div class="eq">*</div>
+                            <div class="qty"><input type="number" class="qty-input" value="2" min="0"></div>
+                            <div class="eq">=</div><div class="total row-total">4.000</div>
+                        </div>
+                        <div class="cash-row" data-value="1000">
+                            <div class="val">1.000</div><div class="eq">*</div>
+                            <div class="qty"><input type="number" class="qty-input" value="3" min="0"></div>
+                            <div class="eq">=</div><div class="total row-total">3.000</div>
+                        </div>
+
+                        <div class="cash-total-row">
+                            <div id="grand-total">2.982.000</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ASSET MANAGEMENT VIEW ================= -->
+        <div id="assetView" class="view-container" style="display: none;">
+            
+            <div class="asset-dashboard">
+                
+                <!-- CỘT TRÁI: FORM & DANH SÁCH -->
+                <div class="asset-left-col">
+                    
+                    <!-- Form Panel -->
+                    <div class="asset-panel blue-bg">
+                        <h2 class="panel-title" style="margin-bottom: 16px;" id="assetFormTitle">Thêm Tài Sản Mới</h2>
+                        <div class="asset-form">
+                            <div class="form-group">
+                                <label for="assetName">Tên tài sản / khoản mục</label>
+                                <input type="text" id="assetName" class="form-control" placeholder="VD: Tiền lương, Sổ tiết kiệm, Cho A vay...">
+                            </div>
+                            <div class="form-group">
+                                <label for="assetType">Phân loại</label>
+                                <select id="assetType" class="form-control">
+                                    <option value="Tiền mặt">Tiền mặt (Đang có)</option>
+                                    <option value="Ngân hàng">Ngân hàng (Đang có)</option>
+                                    <option value="Đầu tư">Đầu tư (Đang có)</option>
+                                    <option value="Bất động sản">Bất động sản (Đang có)</option>
+                                    <option value="Khác">Khác (Đang có)</option>
+                                    <option value="Cho vay">Cho mượn (Tài sản cho vay)</option>
+                                    <option value="Đi vay">Đi vay (Nợ phải trả)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="assetValue">Giá trị (VNĐ)</label>
+                                <input type="number" id="assetValue" class="form-control" placeholder="VD: 10000000" min="0">
+                            </div>
+                            <button class="btn-submit-asset" id="btnAddAsset">Thêm tài sản</button>
+                            <button class="btn-cancel" id="btnCancelEdit" style="display: none;">Hủy chỉnh sửa</button>
+                        </div>
+                    </div>
+
+                    <!-- List Panel (Đã kéo dãn) -->
+                    <div class="asset-panel list-panel">
+                        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px; border-bottom: 2px dashed #ccc; padding-bottom: 10px;">Danh mục tài sản</h3>
+                        
+                        <div class="asset-list-panel">
+                            <!-- Mục 1: Đang có -->
+                            <div class="list-section">
+                                <div class="list-section-title">
+                                    <span>Tài sản đang có</span>
+                                    <span id="total-current" style="color: var(--chart-1);">0 đ</span>
+                                </div>
+                                <div id="list-current"></div>
+                            </div>
+
+                            <!-- Mục 2: Cho vay -->
+                            <div class="list-section">
+                                <div class="list-section-title">
+                                    <span>Tài sản cho vay</span>
+                                    <span id="total-lent" style="color: var(--chart-6);">0 đ</span>
+                                </div>
+                                <div id="list-lent"></div>
+                            </div>
+
+                            <!-- Mục 3: Đi vay -->
+                            <div class="list-section">
+                                <div class="list-section-title">
+                                    <span>Tài sản đang đi vay</span>
+                                    <span id="total-borrowed" style="color: var(--chart-7);">0 đ</span>
+                                </div>
+                                <div id="list-borrowed"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- CỘT PHẢI: BIỂU ĐỒ & CHI TIÊU -->
+                <div class="asset-right-col">
+                    
+                    <!-- Chart Panel -->
+                    <div class="asset-panel chart-panel">
+                        <h2 class="panel-title" style="margin-bottom: 0;">Phân bổ tài sản</h2>
+                        
+                        <div class="chart-container">
+                            <!-- SVG Donut Chart -->
+                            <svg class="donut-chart" viewBox="0 0 200 200">
+                                <circle cx="100" cy="100" r="60" stroke="#e0e0e0" stroke-width="40"></circle>
+                                <g id="chartSlices">
+                                    <!-- Slices generated by JS -->
+                                </g>
+                            </svg>
+                            
+                            <!-- Center Text -->
+                            <div class="chart-center-text">
+                                <p>Tài sản ròng</p>
+                                <h3 id="totalAssetValue">0 đ</h3>
+                            </div>
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="chart-legend" id="chartLegend">
+                            <!-- Legend generated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Credit Spending Panel -->
+                    <div class="credit-panel">
+                        <h2 class="panel-title" style="text-align: left; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 0; font-size: 16px;">Chi tiêu thẻ tín dụng</h2>
+                        
+                        <div class="credit-content">
+                            <!-- Form -->
+                            <div class="credit-form-col">
+                                <div class="form-group">
+                                    <label>Ngày</label>
+                                    <input type="date" id="creditDate" class="form-control" style="padding: 4px 8px; font-size: 12px;">
+                                </div>
+                                <div class="form-group">
+                                    <label>Nội dung chi</label>
+                                    <input type="text" id="creditDesc" class="form-control" placeholder="VD: Mua sắm..." style="padding: 4px 8px; font-size: 12px;">
+                                </div>
+                                <div class="form-group">
+                                    <label>Số tiền (VNĐ)</label>
+                                    <input type="number" id="creditAmount" class="form-control" placeholder="VD: 500000" style="padding: 4px 8px; font-size: 12px;">
+                                </div>
+                                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                                    <button class="btn-submit-asset" id="btnAddCredit" style="flex: 1; padding: 6px; font-size: 12px; margin-top: 0;">Thêm</button>
+                                    <button class="btn-cancel" id="btnResetCredit" style="flex: 1; padding: 6px; font-size: 12px; margin-top: 0;">Reset</button>
+                                </div>
+                            </div>
+                            
+                            <!-- List & Total -->
+                            <div class="credit-list-col">
+                                <div class="credit-list-container" id="creditList">
+                                    <!-- List items -->
+                                </div>
+                                <div class="cash-total-row" style="margin-top: 8px; padding-top: 8px; justify-content: space-between; border-top: 2px dashed var(--border-color); font-size: 13px;">
+                                    <span>Tổng chi tiêu:</span>
+                                    <span id="creditTotal" style="color: #d9534f; font-size: 15px;">0 đ</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+            
+        </div>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // SIDEBAR COLLAPSE TOGGLE
+        // ==========================================
+        const sidebar = document.getElementById('sidebar');
+        const collapseBtn = document.getElementById('collapseBtn');
+
+        collapseBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+
+        // ==========================================
+        // CHUYỂN ĐỔI GIAO DIỆN (VIEW SWITCHING)
+        // ==========================================
+        function switchView(viewName) {
+            const homeView = document.getElementById('homeView');
+            const assetView = document.getElementById('assetView');
+            const navHome = document.getElementById('nav-home');
+            const navAssets = document.getElementById('nav-assets');
+
+            if (viewName === 'home') {
+                homeView.style.display = 'flex';
+                assetView.style.display = 'none';
+                navHome.classList.add('active');
+                navAssets.classList.remove('active');
+            } else if (viewName === 'assets') {
+                homeView.style.display = 'none';
+                assetView.style.display = 'flex';
+                navAssets.classList.add('active');
+                navHome.classList.remove('active');
+            }
+        }
+
+        // ==========================================
+        // HOME DATA & STATE MANAGEMENT
+        // ==========================================
+        
+        const TODAY_DATE = new Date(); 
+        let viewDate = new Date(TODAY_DATE.getFullYear(), TODAY_DATE.getMonth(), 1);
+        
+        let eventsData = [
+            { id: 1, date: '2026-07-05', title: 'Nộp báo cáo', type: 'event', completed: false },
+            { id: 2, date: '2026-11-03', title: 'Khám răng', type: 'event', completed: true },
+            { id: 3, date: '2026-11-11', title: 'Dọn chuyển nhà', type: 'event', completed: false },
+            { id: 4, date: '2026-11-14', title: 'Kiểm tra lại báo cáo quý 2', type: 'event', completed: false },
+            { id: 5, date: '2026-11-20', title: 'Họp nhóm dự án', type: 'note', completed: false }
+        ];
+        
+        let currentInputType = 'event'; 
+        let currentTimelineFilter = 'event'; 
+
+        document.getElementById('eventDateInput').valueAsDate = TODAY_DATE;
+
+        function formatDateDisplay(dateString) {
+            if (!dateString) return '';
+            const parts = dateString.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+            return dateString;
+        }
+
+        // 1. Render Calendar
+        function renderCalendar() {
+            const year = viewDate.getFullYear();
+            const month = viewDate.getMonth(); 
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('currentMonthYear').innerText = `${monthNames[month]} ${year}`;
+
+            const firstDayIndex = new Date(year, month, 1).getDay(); 
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            let gridHTML = '';
+            ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(day => {
+                gridHTML += `<div class="day-name">${day}</div>`;
+            });
+            
+            for (let i = 0; i < firstDayIndex; i++) {
+                gridHTML += `<div class="day-number empty"></div>`;
+            }
+            
+            for (let i = 1; i <= daysInMonth; i++) {
+                let isToday = (year === TODAY_DATE.getFullYear() && month === TODAY_DATE.getMonth() && i === TODAY_DATE.getDate());
+                let activeClass = isToday ? 'active' : '';
+                gridHTML += `<div class="day-number ${activeClass}">${i}</div>`;
+            }
+            
+            document.getElementById('calendarGrid').innerHTML = gridHTML;
+            renderCalendarEvents(year, month);
+        }
+
+        // 2. Render Calendar Events
+        function renderCalendarEvents(year, month) {
+            const container = document.getElementById('calendarEventList');
+            container.innerHTML = `
+                <div class="event-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#f8e59a" stroke="#f8e59a"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    Sự kiện tháng này
+                </div>
+            `;
+
+            const monthStr = String(month + 1).padStart(2, '0');
+            const yearMonthStr = `${year}-${monthStr}`;
+
+            const monthEvents = eventsData.filter(e => e.type === 'event' && e.date.startsWith(yearMonthStr));
+            monthEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if (monthEvents.length === 0) {
+                container.innerHTML += `<div class="event-item" style="opacity: 0.7; font-style: italic;">Chưa có sự kiện nào.</div>`;
+            } else {
+                monthEvents.forEach(event => {
+                    const div = document.createElement('div');
+                    div.className = 'event-item';
+                    div.innerHTML = `
+                        <span class="event-date">${formatDateDisplay(event.date)}</span>
+                        <span class="event-desc">• ${event.title}</span>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+        }
+
+        // 3. Render Timeline
+        function renderTimeline() {
+            const timelineArea = document.getElementById('timelineRenderArea');
+            timelineArea.innerHTML = ''; 
+
+            const filteredData = eventsData.filter(e => e.type === currentTimelineFilter);
+            filteredData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if (filteredData.length === 0) {
+                timelineArea.innerHTML = `<div style="font-size: 11px; color: #888; text-align: center; margin-top: 20px; font-style: italic;">Không có dữ liệu...</div>`;
+                return;
+            }
+
+            filteredData.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'timeline-item';
+                
+                let textClass = '';
+                let extraText = '';
+                if (item.completed) {
+                    textClass = 'style="color: #888; text-decoration: line-through;"';
+                    extraText = ' (đã hoàn thành)';
+                }
+
+                const marginStyle = index === filteredData.length - 1 ? 'style="margin-bottom: 0;"' : '';
+                const yearDisplay = item.date.split('-')[0];
+
+                div.innerHTML = `
+                    <div class="timeline-date">${formatDateDisplay(item.date)}/${yearDisplay}</div>
+                    <div class="timeline-text" ${textClass}>${item.title}${extraText}</div>
+                `;
+                div.setAttribute('style', marginStyle);
+                timelineArea.appendChild(div);
+            });
+        }
+
+        renderCalendar();
+        renderTimeline();
+
+        // Calendar Navigation
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            viewDate.setMonth(viewDate.getMonth() - 1);
+            renderCalendar();
+        });
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            viewDate.setMonth(viewDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        // Save Event/Note
+        const btnSaveNote = document.getElementById('btnSaveNote');
+        const noteTitle = document.getElementById('noteTitle');
+        const noteContent = document.getElementById('noteContent');
+        const eventDateInput = document.getElementById('eventDateInput');
+
+        btnSaveNote.addEventListener('click', () => {
+            const title = noteTitle.value.trim();
+            const date = eventDateInput.value;
+
+            if (!title || !date) {
+                alert('Vui lòng nhập tiêu đề và chọn ngày!');
+                return;
+            }
+
+            eventsData.push({
+                id: Date.now(), date: date, title: title,
+                content: noteContent.value.trim(), type: currentInputType, completed: false
+            });
+
+            noteTitle.value = '';
+            noteContent.value = '';
+
+            const savedDateObj = new Date(date);
+            if (savedDateObj.getMonth() === viewDate.getMonth() && savedDateObj.getFullYear() === viewDate.getFullYear()) {
+                renderCalendarEvents(viewDate.getFullYear(), viewDate.getMonth());
+            }
+            
+            currentTimelineFilter = currentInputType;
+            updateTimelineTabsUI();
+            renderTimeline();
+        });
+
+        // Input Tabs
+        document.querySelectorAll('#inputTabs .tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('#inputTabs .tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentInputType = tab.dataset.type;
+
+                if (currentInputType === 'event') {
+                    noteTitle.placeholder = "Nội dung tiêu đề sự kiện";
+                    noteContent.placeholder = "Nhập nội dung sự kiện...";
+                } else {
+                    noteTitle.placeholder = "Tiêu đề ghi chú";
+                    noteContent.placeholder = "Nhập nội dung ghi chú...";
+                }
+            });
+        });
+
+        // Timeline Tabs
+        const timelineTabs = document.querySelectorAll('#timelineTabs .timeline-tab');
+        function updateTimelineTabsUI() {
+            timelineTabs.forEach(t => {
+                if (t.dataset.filter === currentTimelineFilter) {
+                    t.classList.add('active'); t.classList.remove('inactive');
+                } else {
+                    t.classList.remove('active'); t.classList.add('inactive');
+                }
+            });
+        }
+        timelineTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                currentTimelineFilter = tab.dataset.filter;
+                updateTimelineTabsUI();
+                renderTimeline();
+            });
+        });
+
+        // Cash Table
+        function updateCashTotals() {
+            let grandTotal = 0;
+            document.querySelectorAll('.cash-row').forEach(row => {
+                const value = parseInt(row.dataset.value, 10);
+                const qty = parseInt(row.querySelector('.qty-input').value, 10) || 0;
+                const rowTotal = value * qty;
+                row.querySelector('.row-total').innerText = new Intl.NumberFormat('vi-VN').format(rowTotal);
+                grandTotal += rowTotal;
+            });
+            document.getElementById('grand-total').innerText = new Intl.NumberFormat('vi-VN').format(grandTotal);
+        }
+        document.querySelectorAll('.qty-input').forEach(input => {
+            input.addEventListener('input', updateCashTotals);
+            input.addEventListener('change', function() { if (this.value < 0) this.value = 0; updateCashTotals(); });
+        });
+        updateCashTotals();
+
+        // Bucket List
+        function attachEditEvents(item) {
+            const textSpan = item.querySelector('.text-content');
+            textSpan.addEventListener('dblclick', function() {
+                this.classList.add('editing');
+                this.focus();
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.selectNodeContents(this);
+                range.collapse(false);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            });
+            textSpan.addEventListener('blur', function() {
+                this.classList.remove('editing');
+                const newText = this.innerText.trim();
+                if (newText === '') item.remove();
+                else this.innerText = newText;
+            });
+            textSpan.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
+            });
+        }
+        document.querySelectorAll('.checkbox-item').forEach(attachEditEvents);
+
+        document.getElementById('btnAddGoal').addEventListener('click', () => {
+            const text = document.getElementById('newGoalInput').value.trim();
+            if (text) {
+                const label = document.createElement('label');
+                label.className = 'checkbox-item';
+                label.innerHTML = `
+                    <input type="checkbox">
+                    <span class="custom-checkbox"></span>
+                    <span class="text-content" contenteditable="true">${text}</span>
+                `;
+                document.getElementById('bucketListGrid').appendChild(label);
+                attachEditEvents(label);
+                document.getElementById('newGoalInput').value = '';
+            }
+        });
+
+        // ==========================================
+        // ASSET MANAGEMENT LOGIC
+        // ==========================================
+
+        let assets = [
+            { id: 1, name: 'Lương tháng 10', type: 'Ngân hàng', value: 15000000 },
+            { id: 2, name: 'Tiền mặt tiêu vặt', type: 'Tiền mặt', value: 2000000 },
+            { id: 3, name: 'Chứng khoán VNM', type: 'Đầu tư', value: 10000000 },
+            { id: 4, name: 'Cho bạn A vay', type: 'Cho vay', value: 5000000 },
+            { id: 5, name: 'Vay mua xe', type: 'Đi vay', value: 20000000 }
+        ];
+
+        let editingAssetId = null;
+
+        const typeColors = {
+            'Tiền mặt': 'var(--chart-2)',   // Yellow
+            'Ngân hàng': 'var(--chart-1)',  // Purple
+            'Đầu tư': 'var(--chart-4)',     // Green
+            'Bất động sản': 'var(--chart-3)',// Pink
+            'Khác': 'var(--chart-5)',       // Blue
+            'Cho vay': 'var(--chart-6)',    // Teal
+            'Đi vay': 'var(--chart-7)'      // Orange
+        };
+
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+        }
+
+        function renderAssets() {
+            const listCurrent = document.getElementById('list-current');
+            const listLent = document.getElementById('list-lent');
+            const listBorrowed = document.getElementById('list-borrowed');
+            
+            listCurrent.innerHTML = '';
+            listLent.innerHTML = '';
+            listBorrowed.innerHTML = '';
+
+            let totalCurrent = 0;
+            let totalLent = 0;
+            let totalBorrowed = 0;
+            
+            const typeTotals = {};
+
+            assets.forEach(asset => {
+                const isLent = asset.type === 'Cho vay';
+                const isBorrowed = asset.type === 'Đi vay';
+
+                // Cộng dồn theo phân loại lớn
+                if (isLent) totalLent += asset.value;
+                else if (isBorrowed) totalBorrowed += asset.value;
+                else totalCurrent += asset.value;
+
+                // Cộng dồn theo Type cho Chart (Chỉ tính Current và Lent vào chart tài sản)
+                if (!isBorrowed) {
+                    typeTotals[asset.type] = (typeTotals[asset.type] || 0) + asset.value;
+                }
+
+                // Tạo HTML cho item
+                const item = document.createElement('div');
+                item.className = 'asset-list-item';
+                item.innerHTML = `
+                    <div class="asset-info">
+                        <span class="asset-name">${asset.name}</span>
+                        <span class="asset-type-badge" style="background-color: ${typeColors[asset.type]}; border: 1px solid #1a1a1a;">${asset.type}</span>
+                    </div>
+                    <div class="asset-actions">
+                        <div class="asset-value" style="${isBorrowed ? 'color: var(--chart-7);' : ''}">${formatCurrency(asset.value)}</div>
+                        <button class="icon-btn edit-btn" title="Sửa">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </button>
+                        <button class="icon-btn delete-btn" title="Xóa" style="color: #d9534f;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                    </div>
+                `;
+
+                // Đưa vào đúng danh sách
+                if (isLent) listLent.appendChild(item);
+                else if (isBorrowed) listBorrowed.appendChild(item);
+                else listCurrent.appendChild(item);
+
+                // Attach events
+                item.querySelector('.edit-btn').addEventListener('click', () => editAsset(asset));
+                item.querySelector('.delete-btn').addEventListener('click', () => deleteAsset(asset.id));
+            });
+
+            // Fallback text nếu danh sách trống
+            if(listCurrent.children.length === 0) listCurrent.innerHTML = `<div style="font-size: 11px; color: #888; font-style: italic; padding: 5px;">Chưa có tài sản.</div>`;
+            if(listLent.children.length === 0) listLent.innerHTML = `<div style="font-size: 11px; color: #888; font-style: italic; padding: 5px;">Chưa có khoản cho vay.</div>`;
+            if(listBorrowed.children.length === 0) listBorrowed.innerHTML = `<div style="font-size: 11px; color: #888; font-style: italic; padding: 5px;">Chưa có khoản nợ.</div>`;
+
+            // Cập nhật số liệu tổng của 3 mục
+            document.getElementById('total-current').innerText = formatCurrency(totalCurrent);
+            document.getElementById('total-lent').innerText = formatCurrency(totalLent);
+            document.getElementById('total-borrowed').innerText = formatCurrency(totalBorrowed);
+
+            // Tính Tài sản ròng (Net Worth) = Đang có + Cho vay - Đi vay
+            const netWorth = totalCurrent + totalLent - totalBorrowed;
+            document.getElementById('totalAssetValue').innerText = formatCurrency(netWorth);
+
+            // Render Chart (Chỉ hiển thị phần tài sản mang giá trị dương: Đang có + Cho vay)
+            const chartSlices = document.getElementById('chartSlices');
+            const chartLegend = document.getElementById('chartLegend');
+            chartSlices.innerHTML = '';
+            chartLegend.innerHTML = '';
+
+            const chartTotalValue = totalCurrent + totalLent; // Tổng giá trị biểu đồ
+            const radius = 60;
+            const circumference = 2 * Math.PI * radius;
+            let currentOffset = 0;
+
+            if (chartTotalValue > 0) {
+                for (const [type, value] of Object.entries(typeTotals)) {
+                    const percentage = value / chartTotalValue;
+                    const dashLength = percentage * circumference;
+                    
+                    // Draw Slice
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', '100');
+                    circle.setAttribute('cy', '100');
+                    circle.setAttribute('r', radius);
+                    circle.setAttribute('stroke', typeColors[type]);
+                    circle.setAttribute('stroke-dasharray', `${dashLength} ${circumference - dashLength}`);
+                    circle.setAttribute('stroke-dashoffset', -currentOffset);
+                    chartSlices.appendChild(circle);
+
+                    currentOffset += dashLength;
+
+                    // Add Legend
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'legend-item';
+                    legendItem.innerHTML = `
+                        <div class="legend-color" style="background-color: ${typeColors[type]}"></div>
+                        <span>${type} (${Math.round(percentage * 100)}%)</span>
+                    `;
+                    chartLegend.appendChild(legendItem);
+                }
+            } else {
+                chartLegend.innerHTML = `<div style="font-size: 11px; color: #888; font-style: italic;">Chưa có tài sản để hiển thị.</div>`;
+            }
+        }
+
+        function editAsset(asset) {
+            editingAssetId = asset.id;
+            document.getElementById('assetName').value = asset.name;
+            document.getElementById('assetType').value = asset.type;
+            document.getElementById('assetValue').value = asset.value;
+            
+            // Đổi giao diện form sang chế độ Sửa
+            document.getElementById('assetFormTitle').innerText = 'Chỉnh Sửa Tài Sản';
+            const btnAdd = document.getElementById('btnAddAsset');
+            btnAdd.innerText = 'Cập nhật';
+            btnAdd.style.backgroundColor = 'var(--yellow-main)';
+            btnAdd.style.color = 'var(--text-main)';
+            
+            document.getElementById('btnCancelEdit').style.display = 'block';
+            document.getElementById('assetName').focus();
+        }
+
+        function deleteAsset(id) {
+            if(confirm('Bạn có chắc chắn muốn xóa khoản mục này?')) {
+                assets = assets.filter(a => a.id !== id);
+                if (editingAssetId === id) resetAssetForm();
+                renderAssets();
+            }
+        }
+
+        function resetAssetForm() {
+            editingAssetId = null;
+            document.getElementById('assetName').value = '';
+            document.getElementById('assetValue').value = '';
+            
+            document.getElementById('assetFormTitle').innerText = 'Thêm Tài Sản Mới';
+            const btnAdd = document.getElementById('btnAddAsset');
+            btnAdd.innerText = 'Thêm tài sản';
+            btnAdd.style.backgroundColor = 'var(--purple-main)';
+            btnAdd.style.color = 'white';
+            
+            document.getElementById('btnCancelEdit').style.display = 'none';
+        }
+
+        document.getElementById('btnAddAsset').addEventListener('click', () => {
+            const name = document.getElementById('assetName').value.trim();
+            const type = document.getElementById('assetType').value;
+            const value = parseFloat(document.getElementById('assetValue').value);
+
+            if (!name || isNaN(value) || value <= 0) {
+                alert('Vui lòng nhập tên và giá trị hợp lệ (lớn hơn 0)!');
+                return;
+            }
+
+            if (editingAssetId) {
+                // Cập nhật
+                const index = assets.findIndex(a => a.id === editingAssetId);
+                if (index !== -1) {
+                    assets[index] = { ...assets[index], name, type, value };
+                }
+                resetAssetForm();
+            } else {
+                // Thêm mới
+                assets.push({ id: Date.now(), name, type, value });
+                document.getElementById('assetName').value = '';
+                document.getElementById('assetValue').value = '';
+            }
+
+            renderAssets();
+        });
+
+        document.getElementById('btnCancelEdit').addEventListener('click', resetAssetForm);
+
+        // ==========================================
+        // CREDIT SPENDING LOGIC
+        // ==========================================
+
+        let creditData = [
+            { id: 1, date: '2026-11-01', desc: 'Mua sắm Shopee', amount: 350000 },
+            { id: 2, date: '2026-11-03', desc: 'Ăn tối', amount: 500000 }
+        ];
+
+        document.getElementById('creditDate').valueAsDate = new Date();
+
+        function renderCredit() {
+            const list = document.getElementById('creditList');
+            list.innerHTML = '';
+            let total = 0;
+
+            // Sort newest first
+            creditData.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (creditData.length === 0) {
+                list.innerHTML = `<div style="text-align: center; color: #888; font-style: italic; padding: 10px; font-size: 11px;">Chưa có chi tiêu nào.</div>`;
+            }
+
+            creditData.forEach(item => {
+                total += item.amount;
+                const div = document.createElement('div');
+                div.className = 'credit-list-item';
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; width: 65%;">
+                        <span class="credit-date-tag">${formatDateDisplay(item.date)}</span>
+                        <span class="credit-desc-text">${item.desc}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="credit-amount-text">${formatCurrency(item.amount)}</span>
+                        <button class="icon-btn delete-credit" data-id="${item.id}" style="color: #d9534f; width: 20px; height: 20px; border: none; background: transparent;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+
+            document.getElementById('creditTotal').innerText = formatCurrency(total);
+
+            // Attach delete events
+            document.querySelectorAll('.delete-credit').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(e.currentTarget.dataset.id);
+                    if(confirm('Xóa khoản chi tiêu này?')) {
+                        creditData = creditData.filter(c => c.id !== id);
+                        renderCredit();
+                    }
+                });
+            });
+        }
+
+        document.getElementById('btnAddCredit').addEventListener('click', () => {
+            const date = document.getElementById('creditDate').value;
+            const desc = document.getElementById('creditDesc').value.trim();
+            const amount = parseFloat(document.getElementById('creditAmount').value);
+
+            if (!date || !desc || isNaN(amount) || amount <= 0) {
+                alert('Vui lòng nhập đầy đủ thông tin hợp lệ!');
+                return;
+            }
+
+            creditData.push({ id: Date.now(), date, desc, amount });
+            
+            document.getElementById('creditDesc').value = '';
+            document.getElementById('creditAmount').value = '';
+
+            renderCredit();
+        });
+
+        // NÚT RESET CHI TIÊU
+        document.getElementById('btnResetCredit').addEventListener('click', () => {
+            if(confirm('Bạn có chắc chắn muốn xóa toàn bộ danh sách chi tiêu thẻ tín dụng?')) {
+                creditData = [];
+                renderCredit();
+            }
+        });
+
+        // Initial renders
+        renderAssets();
+        renderCredit();
+
+    </script>
+</body>
+</html>
